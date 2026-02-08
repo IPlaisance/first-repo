@@ -1,0 +1,335 @@
+import random          # Used for computer move selection
+import time            # Used for tracking elapsed game time
+
+
+# ---------------- CONSTANTS ----------------
+
+EMPTY = "."             # Empty square on the board
+PLAYER = "P"            # Player regular piece
+PLAYER_KING = "PK"      # Player king
+COMPUTER = "C"          # Computer regular piece
+COMPUTER_KING = "CK"    # Computer king
+SIZE = 8                # Board size (8x8)
+
+
+# ---------------- GAME STATE ----------------
+
+turn_clock = 0                  # Counts total turns taken
+start_time = time.time()        # Records game start time
+
+player_special_move = False     # True when player earned king power
+computer_special_move = False   # True when computer earned king power
+
+last_computer_move = None       # Stores (row, col) of last computer move
+
+
+# ---------------- BOARD CREATION ----------------
+
+def create_board():
+    """
+    Creates and returns a new 8x8 checkers board
+    with pieces placed in their starting positions.
+    """
+    # Create empty board
+    board = [[EMPTY for _ in range(SIZE)] for _ in range(SIZE)]
+
+    # Place computer pieces (top 3 rows)
+    for r in range(3):
+        for c in range(SIZE):
+            if (r + c) % 2 == 1:     # Only on 'dark' squares
+                board[r][c] = COMPUTER
+
+    # Place player pieces (bottom 3 rows)
+    for r in range(5, 8):
+        for c in range(SIZE):
+            if (r + c) % 2 == 1:
+                board[r][c] = PLAYER
+
+    return board
+
+
+# ---------------- BOARD DISPLAY ----------------
+
+def print_board(board, selected_piece=None):
+    """
+    Prints the board to the terminal.
+    Highlights:
+    - selected player piece
+    - computer's last moved piece
+    """
+    elapsed = int(time.time() - start_time)
+
+    print(f"\nTurn: {turn_clock} | Time: {elapsed}s")
+    print("     a   b   c   d   e   f   g   h")
+
+    for r in range(SIZE):
+        row_str = f"{r} "
+        for c in range(SIZE):
+            cell = board[r][c]
+
+            # Highlight computer's last move
+            if last_computer_move == (r, c):
+                cell = f"*{cell}"
+
+            # Highlight player's selected piece
+            if selected_piece == (r, c):
+                cell = f"[{cell}]"
+
+            row_str += f"{cell:>4}"
+
+        print(row_str)
+
+    print("     a   b   c   d   e   f   g   h\n")
+
+
+# ---------------- HELPER FUNCTIONS ----------------
+
+def in_bounds(r, c):
+    """Returns True if (r,c) is inside the board."""
+    return 0 <= r < SIZE and 0 <= c < SIZE
+
+
+def coord_to_index(coord):
+    """
+    Converts chess-style coordinates (e.g. 'c5')
+    into (row, col) indices.
+    """
+    col = ord(coord[0].lower()) - ord('a')
+    row = int(coord[1])
+    return row, col
+
+
+def index_to_coord(r, c):
+    """Converts (row, col) into chess-style coordinates."""
+    return chr(ord('a') + c) + str(r)
+
+
+def is_player_piece(p):
+    """Returns True if p is a player piece or king."""
+    return p in (PLAYER, PLAYER_KING)
+
+
+def is_computer_piece(p):
+    """Returns True if p is a computer piece or king."""
+    return p in (COMPUTER, COMPUTER_KING)
+
+
+def is_king(p):
+    """Returns True if p is any king."""
+    return p in (PLAYER_KING, COMPUTER_KING)
+
+
+# ---------------- MOVE GENERATION ----------------
+
+def get_piece_moves(board, r, c):
+    """
+    Returns two lists:
+    - normal moves
+    - jump moves
+    for the piece at (r,c)
+    """
+    piece = board[r][c]
+    if piece == EMPTY:
+        return [], []
+
+    moves = []
+    jumps = []
+
+    # Determine movement direction
+    if piece in (PLAYER, PLAYER_KING):
+        dirs = [(-1,-1), (-1,1)]         # Player moves up
+        if is_king(piece):
+            dirs += [(1,-1), (1,1)]      # Kings move both ways
+        opponent_check = is_computer_piece
+    else:
+        dirs = [(1,-1), (1,1)]           # Computer moves down
+        if is_king(piece):
+            dirs += [(-1,-1), (-1,1)]
+        opponent_check = is_player_piece
+
+    for dr, dc in dirs:
+        nr, nc = r + dr, c + dc
+        jr, jc = r + 2*dr, c + 2*dc
+
+        # Normal move
+        if in_bounds(nr, nc) and board[nr][nc] == EMPTY:
+            moves.append((nr, nc))
+
+        # Jump move
+        if (in_bounds(jr, jc) and
+            opponent_check(board[nr][nc]) and
+            board[jr][jc] == EMPTY):
+            jumps.append((jr, jc))
+
+    return moves, jumps
+
+
+def get_all_moves(board, piece_check):
+    """
+    Returns all possible moves and jumps
+    for one side (player or computer).
+    """
+    all_moves = []
+    all_jumps = []
+
+    for r in range(SIZE):
+        for c in range(SIZE):
+            if piece_check(board[r][c]):
+                moves, jumps = get_piece_moves(board, r, c)
+                for m in moves:
+                    all_moves.append((r,c,m[0],m[1]))
+                for j in jumps:
+                    all_jumps.append((r,c,j[0],j[1]))
+
+    return all_moves, all_jumps
+
+
+# ---------------- MOVE EXECUTION ----------------
+
+def make_move(board, r1, c1, r2, c2):
+    """
+    Executes a move and returns True if a king was created.
+    """
+    piece = board[r1][c1]
+    board[r2][c2] = piece
+    board[r1][c1] = EMPTY
+
+    # Remove captured piece
+    if abs(r2 - r1) == 2:
+        board[(r1+r2)//2][(c1+c2)//2] = EMPTY
+
+    became_king = False
+
+    # Crown kings
+    if piece == PLAYER and r2 == 0:
+        board[r2][c2] = PLAYER_KING
+        became_king = True
+
+    if piece == COMPUTER and r2 == SIZE - 1:
+        board[r2][c2] = COMPUTER_KING
+        became_king = True
+
+    return became_king
+
+
+# ---------------- GAME END CHECKS ----------------
+
+def has_piece(board, check):
+    """Returns True if side has at least one piece."""
+    return any(check(cell) for row in board for cell in row)
+
+
+def has_any_moves(board, check):
+    """Returns True if side has any legal moves."""
+    moves, jumps = get_all_moves(board, check)
+    return bool(moves or jumps)
+
+
+# ---------------- PLAYER TURN ----------------
+
+def player_turn(board):
+    """
+    Handles the entire player turn:
+    - king power
+    - forced jump rule
+    - piece selection
+    - move execution
+    """
+    global player_special_move
+
+    if player_special_move:
+        player_move_opponent_piece(board)
+        player_special_move = False
+        return
+
+    _, forced_jumps = get_all_moves(board, is_player_piece)
+
+    while True:
+        try:
+            piece = input("Select piece → ")
+            r, c = coord_to_index(piece)
+
+            if not is_player_piece(board[r][c]):
+                print("Not your piece.")
+                continue
+
+            moves, jumps = get_piece_moves(board, r, c)
+
+            if forced_jumps:
+                if not jumps:
+                    print("You must jump.")
+                    continue
+                choices = jumps
+            else:
+                choices = moves + jumps
+
+            print_board(board, selected_piece=(r,c))
+            print("Moves:", [index_to_coord(m[0],m[1]) for m in choices])
+
+            dest = input("Move to → ")
+            r2, c2 = coord_to_index(dest)
+
+            if (r2,c2) not in choices:
+                print("Invalid.")
+                continue
+
+            if make_move(board, r, c, r2, c2):
+                player_special_move = True
+
+            break
+
+        except:
+            print("Bad input.")
+
+
+# ---------------- COMPUTER TURN ----------------
+
+def computer_turn(board):
+    """
+    Handles computer move selection and execution.
+    """
+    global computer_special_move, last_computer_move
+
+    if computer_special_move:
+        computer_move_opponent_piece(board)
+        computer_special_move = False
+        return
+
+    moves, jumps = get_all_moves(board, is_computer_piece)
+    move = random.choice(jumps if jumps else moves)
+
+    if make_move(board, *move):
+        computer_special_move = True
+
+    last_computer_move = (move[2], move[3])
+    print("Computer moved.")
+
+
+# ---------------- MAIN GAME LOOP ----------------
+
+def main():
+    global turn_clock
+    board = create_board()
+
+    while True:
+        print_board(board)
+
+        # Win / loss conditions
+        if not has_piece(board, is_player_piece):
+            print("COMPUTER WINS — you have no pieces left.")
+        if not has_any_moves(board, is_player_piece):
+            print("COMPUTER WINS — you have no legal moves.")
+        if not has_piece(board, is_computer_piece):
+            print("YOU WIN — COMPUTER has no pieces left.")
+        if not has_any_moves(board, is_computer_piece):
+            print("YOU WIN — COMPUTER has no legal moves.")
+
+        player_turn(board)
+        turn_clock += 1
+
+        computer_turn(board)
+        turn_clock += 1
+
+
+if __name__ == "__main__":
+    main()
