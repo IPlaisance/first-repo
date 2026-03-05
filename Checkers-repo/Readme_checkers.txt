@@ -1,0 +1,11 @@
+ReadMe File: 
+-	This is an 8x8 checkerboard grid game, computer vs player. Objective of the game: to remove all of the other player’s pieces off the board. Game is over when there are no pieces left of one side or there are no possible moves left. 
+-	The player will move first.
+-	Checker pieces can move diagonally one space at a time. A turn includes moving one checker, either just moving one space or by jumping. The player and computer alternate taking turns.
+-	Jumping: If an opponent’s piece is in the space diagonal to the player’s piece and there is an open space diagonally behind it, the player must ‘jump’ by going over the opponent’s space and landing on the open space behind it, removing the opponent’s piece from the board.
+-	Players are required to jump when it is possible. 
+-	Checker pieces can only move in one general direction of the board, from starting side to the opponent’s side, unless the piece has been crowned a king.
+-	King: When a piece moves completely to the end of the board (opposite from the starting side) it is crowned ‘king’. This means it can move diagonally one in any direction.
+-	custom rule: when someone gets a king –> one or two pieces on each team get ‘shuffled’ = they will move either to the same level or ‘back’ into a random open spot.
+-	Additional custom rule: speed checkers: turn is limited to 30 seconds. If no move has been made by that time, the turn is skipped.
+-	To play a turn: select piece (ie a5), and the piece will be highlighted in brackets. Then chose which of the available moves to take (ie b4). The computer’s most recent turn will be indicated with a *. 
