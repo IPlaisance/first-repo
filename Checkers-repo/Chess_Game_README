@@ -1,0 +1,30 @@
+Chess Game READ_ME
+Isabelle Plaisance 
+
+This is a simple single player chess game in Python using Tkinter for GUI. It has features such as:
+
+-Full Chess Rules: Pieces move according to standard chess rules (pawn, rook, knight, bishop, queen, king).
+-Check & Checkmate Detection: Correctly detects when a king is in check or checkmate.
+-Stalemate Detection: Detects when a player has no legal moves but is not in check.
+-Pawn Promotion: Pawns are automatically promoted to a queen when reaching the opposite end.
+-Castling & En Passant: Basic castling and en passant moves supported.
+-AI Opponent: Simple AI that plays legal moves for black.
+-GUI: Tkinter-based graphical board with emojis for chess pieces.
+Legal Move Highlights: Shows available moves for the selected piece.
+
+Run the game by running the Chess_game.py file. 
+
+To play: click on a white piece to select it. Click on one of the valid destination squares to move (it will have a black dot on the options). Ai will automatically make its move after you. Game has status messages on the bottom such as "White to move" and "Check" "Checkmate" and "stalemate"
+
+chess_game.py: game logic and GUI
+test_chess_game.py: unit tests for game logic
+Chess Game READ_ME: this file 
+
+
+Test covers:
+Piece moves (pawn, knight, rook, bishop, queen, king)
+Check detection
+Legal moves
+Checkmate and stalemate
+Pawn promotion
+Board and turn updates after moves
